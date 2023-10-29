@@ -72,7 +72,7 @@ fn polygon_contains_point(polygon: Vec<Point>, point: &Point) -> bool {
     };
 
     // 三角形分割して各々判定
-    // へこみになっていない ps[i], ps[i+1], ps[i+2] で囲まれる三角形を処理して i を下げていく.
+    // へこみになっていない ps[i], ps[i+1], ps[i+2] で囲まれる三角形を処理して n を下げていく.
     'loop_ps: while ps.len() > 3 {
         let n = ps.len();
 
