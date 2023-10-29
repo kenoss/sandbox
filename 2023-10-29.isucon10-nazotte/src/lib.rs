@@ -61,9 +61,9 @@ impl Vector {
 fn polygon_contains_point(polygon: Vec<Point>, point: &Point) -> bool {
     assert!(polygon.len() >= 3);
 
-    // まず「与えられた頂点を左回りに番号を振り直したときの内部」から取った点に対しての arg(z) を計算して向きを判断し,
-    // arg(z) = 2π ケースに帰着.
-    let mut ps = if calc_argz(&polygon) > 0.0 {
+    // まず「与えられた頂点を左回りに番号を振り直したときの内部」から取った点に対しての ∫arg(z) を計算して向きを判断し,
+    // ∫arg(z) = 2π ケースに帰着.
+    let mut ps = if integral_argz(&polygon) > 0.0 {
         polygon
     } else {
         polygon.into_iter().rev().collect()
@@ -74,7 +74,7 @@ fn polygon_contains_point(polygon: Vec<Point>, point: &Point) -> bool {
     'loop_ps: while ps.len() > 3 {
         let n = ps.len();
 
-        // arg(z) = 2π なので全て凹みではない. 凸なやつを探す.
+        // ∫arg(z) = 2π なので全て凹みではない. 凸なやつを探す.
         let mut i = usize::MAX;
         for j in 0..n {
             let v = Vector::points_minus(&ps[(j + 2) % n], &ps[j]);
@@ -106,8 +106,8 @@ fn polygon_contains_point(polygon: Vec<Point>, point: &Point) -> bool {
     triangle_contains_point(&ps[0], &ps[1], &ps[2], point)
 }
 
-// Calculate arg(z) of the closed path.
-fn calc_argz(ps: &[Point]) -> f64 {
+// Calculate ∫arg(z) of the closed path.
+fn integral_argz(ps: &[Point]) -> f64 {
     let n = ps.len();
     let mut vs = vec![];
     for i in 0..(n - 1) {
@@ -127,7 +127,7 @@ fn calc_argz(ps: &[Point]) -> f64 {
         } else if sin.abs() < EPSILON && cos < 0.0 {
             // めんどいので panic.
             // もしこういうのをサポートしたいのであれば, こういう点をスキップすると上手くいくはず.
-            // なぜなら区分的に滑らかな自己交差のない閉曲線の連続変形で arg(z) は定数なので.
+            // なぜなら区分的に滑らかな自己交差のない閉曲線の連続変形で ∫arg(z) は定数なので.
             dbg!(a, b, cos, sin);
             panic!();
         } else if sin.is_sign_positive() {
@@ -140,7 +140,7 @@ fn calc_argz(ps: &[Point]) -> f64 {
     argz
 }
 
-// Assume that path p0 -> p1 -> p2 has arg(z) = 2π.
+// Assume that path p0 -> p1 -> p2 has ∫arg(z) = 2π.
 fn triangle_contains_point(p0: &Point, p1: &Point, p2: &Point, point: &Point) -> bool {
     fn is_in_left(p0: &Point, p1: &Point, point: &Point) -> bool {
         let x = Vector::points_minus(p1, p0)
@@ -210,18 +210,18 @@ mod tests {
     }
 
     #[test]
-    fn test_argz() {
+    fn test_integral_argz() {
         // 2π
         assert_eq!(
-            calc_argz(&points(&[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)])),
+            integral_argz(&points(&[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)])),
             6.283185307179586
         );
         assert_eq!(
-            calc_argz(&points(&[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (-1.0, 2.0)])),
+            integral_argz(&points(&[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (-1.0, 2.0)])),
             6.283185307179585
         );
         assert_eq!(
-            calc_argz(&points(&[
+            integral_argz(&points(&[
                 (0.0, 0.0),
                 (1.0, 0.0),
                 (0.0, 1.0),
@@ -232,15 +232,15 @@ mod tests {
         );
         // -2π
         assert_eq!(
-            calc_argz(&points(&[(0.0, 0.0), (0.0, 1.0), (1.0, 0.0)])),
+            integral_argz(&points(&[(0.0, 0.0), (0.0, 1.0), (1.0, 0.0)])),
             -6.283185307179586
         );
         assert_eq!(
-            calc_argz(&points(&[(0.0, 0.0), (-1.0, 2.0), (0.0, 1.0), (1.0, 0.0)])),
+            integral_argz(&points(&[(0.0, 0.0), (-1.0, 2.0), (0.0, 1.0), (1.0, 0.0)])),
             -6.283185307179585
         );
         assert_eq!(
-            calc_argz(&points(&[
+            integral_argz(&points(&[
                 (0.0, 0.0),
                 (0.5, -3.0),
                 (-1.0, 2.0),
