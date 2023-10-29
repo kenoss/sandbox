@@ -61,7 +61,8 @@ impl Vector {
 fn polygon_contains_point(polygon: Vec<Point>, point: &Point) -> bool {
     assert!(polygon.len() >= 3);
 
-    // まず「与えられた頂点を左回りに番号を振り直したときの内部」から取った点に対しての arg(z) を計算して向きを判断する.
+    // まず「与えられた頂点を左回りに番号を振り直したときの内部」から取った点に対しての arg(z) を計算して向きを判断し,
+    // arg(z) = 2π ケースに帰着.
     let mut ps = if calc_argz(&polygon) > 0.0 {
         polygon
     } else {
