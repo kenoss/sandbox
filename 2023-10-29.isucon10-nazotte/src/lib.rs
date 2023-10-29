@@ -61,7 +61,7 @@ impl Vector {
 fn polygon_contains_point(polygon: Vec<Point>, point: &Point) -> bool {
     assert!(polygon.len() >= 3);
 
-    // まず「与えられた頂点を左回りに番号を振り直したときの内部」から取った点に対しての arg z を計算して向きを判断する.
+    // まず「与えられた頂点を左回りに番号を振り直したときの内部」から取った点に対しての arg(z) を計算して向きを判断する.
 
     let argz = calc_argz(&polygon);
 
@@ -71,46 +71,41 @@ fn polygon_contains_point(polygon: Vec<Point>, point: &Point) -> bool {
         polygon.into_iter().rev().collect()
     };
 
-    // だいたい三角形分割して各々判定
-    // ps[n-2], ps[n-1], ps[0] で囲まれる三角形を処理して n を下げていく.
-    // ps[n-1] が多角形 ps[0], ..., ps[n-2] の外側にある場合はそれぞれで judge.
-    // ps[n-1] が多角形 ps[0], ..., ps[n-2] の内側にある場合は judge を反転して凹みを解消する.
-    while ps.len() > 3 {
+    // 三角形分割して各々判定
+    // へこみになっていない ps[i], ps[i+1], ps[i+2] で囲まれる三角形を処理して i を下げていく.
+    'loop_ps: while ps.len() > 3 {
         let n = ps.len();
 
-        let v = Vector::points_minus(&ps[0], &ps[n - 2]);
-        let x = v
-            .normalized_rot90()
-            .dot(&Vector::points_minus(&ps[0], &ps[n - 1]));
-        let is_in_right = if x.abs() < EPSILON {
-            ps.pop();
+        // arg(z) = 2π なので全て凹みではない. 凸なやつを探す.
+        let mut i = usize::MAX;
+        for j in 0..n {
+            let v = Vector::points_minus(&ps[(j + 2) % n], &ps[j]);
+            let x = v
+                .normalized_rot90()
+                .dot(&Vector::points_minus(&ps[(j + 2) % n], &ps[(j + 1) % n]));
+            let is_in_right = if x.abs() < EPSILON {
+                ps.remove((j + 1) % n);
+                continue 'loop_ps;
+            } else {
+                x > 0.0
+            };
+
+            if is_in_right {
+                i = j;
+                break;
+            }
+        }
+
+        // ps[i+1] は外側にある.
+        if triangle_contains_point(&ps[i], &ps[(i + 1) % n], &ps[(i + 2) % n], point) {
+            return true;
+        } else {
+            ps.remove((i + 1) % n);
             continue;
-        } else {
-            x > 0.0
-        };
-
-        if is_in_right {
-            // ps[n-1] は外側にある.
-            if triangle_contains_point(&ps[n - 2], &ps[n - 1], &ps[0], point, true) {
-                return true;
-            } else {
-                ps.pop();
-                continue;
-            }
-        } else {
-            // ps[n-1] は内側にある.
-
-            // TODO edge の処理...
-            if triangle_contains_point(&ps[n - 2], &ps[0], &ps[n - 1], point, false) {
-                return false;
-            } else {
-                ps.pop();
-                continue;
-            }
         }
     }
 
-    triangle_contains_point(&ps[0], &ps[1], &ps[2], point, true)
+    triangle_contains_point(&ps[0], &ps[1], &ps[2], point)
 }
 
 // Calculate arg(z) of the closed path.
@@ -134,7 +129,7 @@ fn calc_argz(ps: &[Point]) -> f64 {
         } else if sin.abs() < EPSILON && cos < 0.0 {
             // めんどいので panic.
             // もしこういうのをサポートしたいのであれば, こういう点をスキップすると上手くいくはず.
-            // なぜなら区分的に滑らかな自己交差のない閉曲線の連続変形で arg z は定数なので.
+            // なぜなら区分的に滑らかな自己交差のない閉曲線の連続変形で arg(z) は定数なので.
             dbg!(a, b, cos, sin);
             panic!();
         } else if sin.is_sign_positive() {
@@ -148,28 +143,19 @@ fn calc_argz(ps: &[Point]) -> f64 {
 }
 
 // Assume that path p0 -> p1 -> p2 has arg(z) = 2π.
-fn triangle_contains_point(
-    p0: &Point,
-    p1: &Point,
-    p2: &Point,
-    point: &Point,
-    _value_for_edge: bool,
-) -> bool {
-    fn is_in_left(p0: &Point, p1: &Point, point: &Point, value_for_edge: bool) -> bool {
+fn triangle_contains_point(p0: &Point, p1: &Point, p2: &Point, point: &Point) -> bool {
+    fn is_in_left(p0: &Point, p1: &Point, point: &Point) -> bool {
         let x = Vector::points_minus(p1, p0)
             .normalized_rot90()
             .dot(&Vector::points_minus(point, p0));
         if x.abs() < EPSILON {
-            value_for_edge
+            true
         } else {
             x > 0.0
         }
     }
 
-    // TODO: edge 上にいるときの処理
-    is_in_left(p0, p1, point, true)
-        && is_in_left(p1, p2, point, true)
-        && is_in_left(p2, p0, point, true)
+    is_in_left(p0, p1, point) && is_in_left(p1, p2, point) && is_in_left(p2, p0, point)
 }
 
 #[cfg(test)]
