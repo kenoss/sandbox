@@ -140,7 +140,7 @@ fn integral_argz(ps: &[Point]) -> f64 {
     argz
 }
 
-// Assume that path p0 -> p1 -> p2 has ∫arg(z) = 2π.
+// Assume that path p0 -> p1 -> p2 -> p0 has ∫arg(z) = 2π.
 fn triangle_contains_point(p0: &Point, p1: &Point, p2: &Point, point: &Point) -> bool {
     fn is_in_left(p0: &Point, p1: &Point, point: &Point) -> bool {
         let x = Vector::points_minus(p1, p0)
