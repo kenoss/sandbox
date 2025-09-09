@@ -1,0 +1,8 @@
+[package]
+name = "template_quote-could-not-find-proc_macro2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# proc-macro2 = "1.0.101"
+template-quote = "0.4.2"
